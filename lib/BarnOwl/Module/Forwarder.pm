@@ -93,9 +93,10 @@ sub handle_message {
 
     if($m->{type} eq "zephyr") {
         if($m->{class} eq $this->{class} and not $m->opcode eq "forwarded" ) {
+            my $sendmsg = "(From " . $m->sender . " -i " . $m->subcontext . ")\n" . $m->body;
             foreach $recipient (@{$this->{recipients}})
             {
-                BarnOwl::command("jwrite", "-m", $m->body, $recipient);
+                BarnOwl::command("jwrite", "-m", $sendmsg, $recipient);
             }
         }
     } elsif($m->{type} eq "jabber") {
