@@ -105,7 +105,7 @@ sub handle_message {
     } elsif($m->{type} eq "jabber") {
         if($m->{recipient} eq $this->{jabber}) {
             BarnOwl::command('set', 'zsender', $m->sender);
-            BarnOwl::zephyr_zwrite('-c '.$this->{class}.' -O forwarded'.' -s '.$m->sender, $m->body);
+            BarnOwl::zephyr_zwrite('-c '.$this->{class}.' -O forwarded -s "zephyr/Jabber bridge"', $m->body);
             BarnOwl::command('set', 'zsender', 'zephyr/Jabber forwarder');
         }
     }
