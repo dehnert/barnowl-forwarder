@@ -93,7 +93,10 @@ sub handle_message {
 
     if($m->{type} eq "zephyr") {
         if($m->{class} eq $this->{class} and not $m->opcode eq "forwarded" ) {
-            BarnOwl::command("jwrite", "-m", $m->body, @{$this->{recipients}});
+            foreach $recipient (@{$this->{recipients}})
+            {
+                BarnOwl::command("jwrite", "-m", $m->body, $recipient);
+            }
         }
     } elsif($m->{type} eq "jabber") {
         if($m->{recipient} eq $this->{jabber}) {
