@@ -36,8 +36,7 @@ sub read_config {
 
 sub load_config {
     my $prefix = shift;
-    my $cfg = read_config($conffile);
-    my $appconf = $cfg->{$prefix};
+    my $appconf = read_config($conffile);
     my $elem;
     @classes = ();
     foreach $elem (@$appconf)
@@ -93,28 +92,39 @@ sub handle_message {
     my $this = shift;
     my $m = shift;
     my $recipient;
-    my $sendmsg;
+    my $msgprefix;
+    my $resend = 0;
 
-    if($m->{type} eq "zephyr") {
-        if($m->{class} eq $this->{class} and not $m->opcode eq "forwarded" ) {
-            $sendmsg = "(From " . $m->sender . " -i " . $m->subcontext . ")\n" . $m->body;
-            foreach $recipient (@{$this->{recipients}})
-            {
-                BarnOwl::command("jwrite", "-m", $sendmsg, $recipient);
-            }
+    # Receive messages and configure
+    if($m->{type} eq "zephyr" and $this->{zephyr}) {
+        if($m->{class} eq $this->{zephyr}->{class} and not $m->opcode eq "forwarded" ) {
+            $msgprefix = "(From " . $m->sender . " -i " . $m->subcontext . ")\n";
+            $resend = 1;
         }
-    } elsif($m->{type} eq "jabber") {
-        if($m->{recipient} eq $this->{jabber}) {
-            BarnOwl::command('set', 'zsender', $m->sender);
-            BarnOwl::zephyr_zwrite('-c '.$this->{class}.' -O forwarded -s "zephyr/Jabber bridge"', $m->body);
-            BarnOwl::command('set', 'zsender', 'zephyr/Jabber forwarder');
+    }
+    if($m->{type} eq "jabber" and $this->{jabber}) {
+        if($this->{jabber}->{account} eq $m->{recipient}) {
+            $msgprefix = "(From " . $m->sender . ")\n";
+            $resend = 1;
+        }
+    }
 
-            $sendmsg = "(From " . $m->sender . ")\n" . $m->body;
-            foreach $recipient (@{$this->{recipients}})
-            {
-                if($m->{sender} ne $recipient) {
-                    BarnOwl::command("jwrite", "-m", $sendmsg, $recipient);
-                }
+    return if not $resend;
+
+    # Resend the messages
+    if($this->{zephyr} and $m->{type} ne "zephyr") {
+        BarnOwl::command('set', 'zsender', $m->sender);
+        BarnOwl::zephyr_zwrite('zwrite -c '.$this->{zephyr}->{class}.' -O forwarded -s "zephyr/Jabber bridge"', $m->body);
+        BarnOwl::command('set', 'zsender', 'zephyr/Jabber bridge');
+    }
+    if($this->{jabber}) {
+        BarnOwl::message("resend to jabber path; resend=$resend");
+        foreach $recipient (@{$this->{jabber}->{subscribers}})
+        {
+            if($m->{type} eq "jabber" and $m->sender eq $recipient) {
+                # We got this message from $recipient
+            } else {
+                BarnOwl::command("jwrite", "-m", $msgprefix.$m->body, $recipient);
             }
         }
     }
