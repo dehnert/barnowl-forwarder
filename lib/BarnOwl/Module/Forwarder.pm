@@ -93,10 +93,11 @@ sub handle_message {
     my $this = shift;
     my $m = shift;
     my $recipient;
+    my $sendmsg;
 
     if($m->{type} eq "zephyr") {
         if($m->{class} eq $this->{class} and not $m->opcode eq "forwarded" ) {
-            my $sendmsg = "(From " . $m->sender . " -i " . $m->subcontext . ")\n" . $m->body;
+            $sendmsg = "(From " . $m->sender . " -i " . $m->subcontext . ")\n" . $m->body;
             foreach $recipient (@{$this->{recipients}})
             {
                 BarnOwl::command("jwrite", "-m", $sendmsg, $recipient);
@@ -107,6 +108,14 @@ sub handle_message {
             BarnOwl::command('set', 'zsender', $m->sender);
             BarnOwl::zephyr_zwrite('-c '.$this->{class}.' -O forwarded -s "zephyr/Jabber bridge"', $m->body);
             BarnOwl::command('set', 'zsender', 'zephyr/Jabber forwarder');
+
+            $sendmsg = "(From " . $m->sender . ")\n" . $m->body;
+            foreach $recipient (@{$this->{recipients}})
+            {
+                if($m->{sender} ne $recipient) {
+                    BarnOwl::command("jwrite", "-m", $sendmsg, $recipient);
+                }
+            }
         }
     }
 }
