@@ -60,6 +60,9 @@ sub initialize {
 
 sub handle_message {
     my $m = shift;
+    if (BarnOwl::getvar("forwarder:enable") eq "off") {
+        return;
+    }
     my $classpair;
     foreach $classpair (@classes)
     {
