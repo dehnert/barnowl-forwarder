@@ -97,7 +97,10 @@ sub handle_message {
 
     # Receive messages and configure
     if($m->{type} eq "zephyr" and $this->{zephyr}) {
-        if($m->{class} eq $this->{zephyr}->{class} and not $m->opcode eq "forwarded" ) {
+        if($m->{class} eq $this->{zephyr}->{class} and
+            not $m->opcode eq "forwarded" and
+            not $m->sender =~ m/\/BRIDGE$/
+        ) {
             $msgprefix = "(From " . $m->sender . " -i " . $m->subcontext . ")\n";
             $resend = 1;
         }
@@ -113,7 +116,7 @@ sub handle_message {
 
     # Resend the messages
     if($this->{zephyr} and $m->{type} ne "zephyr") {
-        BarnOwl::command('set', 'zsender', $m->sender);
+        BarnOwl::command('set', 'zsender', $m->sender."/BRIDGE");
         my @args = ('-c', $this->{zephyr}->{class}, '-O', 'forwarded', '-m', $m->body);
         if($this->{zephyr}->{zcrypt}) {
             BarnOwl::zcrypt(@args);
