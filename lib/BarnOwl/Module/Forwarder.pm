@@ -114,11 +114,11 @@ sub handle_message {
     # Resend the messages
     if($this->{zephyr} and $m->{type} ne "zephyr") {
         BarnOwl::command('set', 'zsender', $m->sender);
-        my $args = '-c '.$this->{zephyr}->{class}.' -O forwarded';
+        my @args = ('-c', $this->{zephyr}->{class}, '-O', 'forwarded', '-m', $m->body);
         if($this->{zephyr}->{zcrypt}) {
-            BarnOwl::zephyr_zcrypt('zcrypt '.$args, $m->body);
+            BarnOwl::zcrypt(@args);
         } else {
-            BarnOwl::zephyr_zwrite('zwrite '.$args, $m->body);
+            BarnOwl::zwrite(@args);
         }
         BarnOwl::command('set', 'zsender', 'zephyr/Jabber bridge');
     }
