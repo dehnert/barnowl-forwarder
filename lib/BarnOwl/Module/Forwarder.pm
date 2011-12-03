@@ -101,6 +101,18 @@ sub handle_message {
     my $resend = 0;
 
     # Receive messages and configure
+    my $type = $m->{type};
+    my $zsig = "";
+    if($m->{type} eq "zephyr" and $this->{zephyr}) {
+        if($m->{class} eq $this->{private_recv_zephyr}->{class} and
+           $m->is_private
+        ) {
+            $msgprefix = "(Private from " . $m->sender . " -i " . $m->subcontext . ")\n";
+            $resend = 1;
+            $type = "private-recv-zephyr";
+            $zsig = $m->{zsig};
+        }
+    }
     if($m->{type} eq "zephyr" and $this->{zephyr}) {
         if($m->{class} eq $this->{zephyr}->{class} and
             not $m->opcode eq "forwarded" and
@@ -120,9 +132,15 @@ sub handle_message {
     return if not $resend;
 
     # Resend the messages
-    if($this->{zephyr} and $m->{type} ne "zephyr") {
+    if($this->{zephyr} and $type ne "zephyr") {
         BarnOwl::command('set', 'zsender', $m->sender."/BRIDGE");
         my @args = ('-c', $this->{zephyr}->{class}, '-O', 'forwarded', '-m', $m->body);
+        if($m->{instance}) {
+            unshift @args, ("-i", $m->{instance});
+        }
+        if($zsig) {
+            unshift @args, ("-s", $zsig);
+        }
         if($this->{zephyr}->{zcrypt}) {
             BarnOwl::zcrypt(@args);
         } else {
