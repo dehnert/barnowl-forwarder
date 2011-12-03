@@ -19,6 +19,11 @@ sub fail {
     die("Forwarder Error: $msg\n");
 }
 
+sub debug {
+    my $msg = shift;
+    BarnOwl::admin_message('Forwarder Debug', $msg);
+}
+
 sub read_config {
     my $conffile = shift;
     my $cfg = {};
