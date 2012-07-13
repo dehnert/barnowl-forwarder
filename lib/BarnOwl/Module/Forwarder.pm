@@ -103,7 +103,7 @@ sub handle_message {
     # Receive messages and configure
     my $type = $m->{type};
     my $zsig = "";
-    if($m->{type} eq "zephyr" and $this->{zephyr}) {
+    if($m->{type} eq "zephyr" and $this->{private_recv_zephyr}) {
         if($m->{class} eq $this->{private_recv_zephyr}->{class} and
            $m->is_private
         ) {
