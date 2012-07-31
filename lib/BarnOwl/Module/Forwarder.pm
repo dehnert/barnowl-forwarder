@@ -80,6 +80,7 @@ eval {
     $BarnOwl::Hooks::receiveMessage->add('BarnOwl::Module::Forwarder::handle_message');
 };
 if ($@) {
+    BarnOwl::admin_message('Forwarder', "Adding coderef handler.");
     $BarnOwl::Hooks::receiveMessage->add(\&handle_message);
 }
 
