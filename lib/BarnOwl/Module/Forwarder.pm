@@ -156,7 +156,7 @@ sub handle_message {
             if($m->{type} eq "jabber" and $m->sender eq $recipient) {
                 # We got this message from $recipient
             } else {
-                BarnOwl::command("jwrite", "-m", $msgprefix.$m->body, $recipient);
+                BarnOwl::command("jwrite", "-a", $this->{jabber}->{account}, "-m", $msgprefix.$m->body, $recipient);
             }
         }
     }
