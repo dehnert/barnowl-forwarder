@@ -6,6 +6,7 @@ our $VERSION = 0.1;
 
 use BarnOwl;
 use BarnOwl::Hooks;
+use BarnOwl::Module::Jabber;
 
 use JSON;
 
@@ -17,6 +18,11 @@ sub fail {
     my $msg = shift;
     BarnOwl::admin_message('Forwarder Error', $msg);
     die("Forwarder Error: $msg\n");
+}
+
+sub warn {
+    my $msg = shift;
+    BarnOwl::admin_message('Forwarder Warning', $msg);
 }
 
 sub debug {
@@ -57,6 +63,13 @@ sub initialize {
         description => "If this is set, forwarding will occur. If unset, " .
             "forwarding will be disabled."
     });
+    BarnOwl::new_command(
+        "forwarder:load_config" => \&load_config,
+        {
+            "summary" => "reload the Forwarder configuration",
+            "usage" => "forwarder:load_config"
+        }
+    );
 
     load_config("forwarder");
     BarnOwl::admin_message('Forwarder', "Initialized Forwarder.");
@@ -74,7 +87,7 @@ sub handle_message {
     }
 }
 
-initialize;
+$BarnOwl::Hooks::startup->add("BarnOwl::Module::Forwarder::initialize");
 
 eval {
     $BarnOwl::Hooks::receiveMessage->add('BarnOwl::Module::Forwarder::handle_message');
@@ -91,7 +104,33 @@ package BarnOwl::Module::Forwarder::ClassPair;
 sub new {
     my $class = shift;
     my %args = (@_);
-    return bless {%args}, $class;
+    my $this = bless {%args}, $class;
+    $this->connect();
+    return $this;
+}
+
+sub connect {
+    my $this = shift;
+    if($this->{'jabber'} and $this->{'jabber'}{'autoconnect'}) {
+        my $username = $this->{'jabber'}->{'account'};
+        my $password = $this->{'jabber'}->{'password'};
+        eval {
+            my $resolved = BarnOwl::Module::Jabber::resolveConnectedJID($username);
+            BarnOwl::Module::Forwarder::debug("Already connected to $username: $resolved");
+        };
+        if ($@ =~ /Invalid account: /) {
+            eval {
+                BarnOwl::jabberlogin($username, $password);
+                # Jabber will output a message for us
+                #BarnOwl::Module::Forwarder::debug("Connected(?) to $username");
+            };
+            if ($@) {
+                BarnOwl::Module::Forwarder::warn("Failed connecting to $username:\n$@");
+            }
+        } elsif ($@) {
+            BarnOwl::Module::Forwarder::warn("Unexpected error while connecting to $username:\n$@");
+        }
+    }
 }
 
 sub handle_message {
