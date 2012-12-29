@@ -7,6 +7,7 @@ our $VERSION = 0.1;
 use BarnOwl;
 use BarnOwl::Hooks;
 use BarnOwl::Module::Jabber;
+use BarnOwl::Zephyr;
 
 use JSON;
 
@@ -70,9 +71,24 @@ sub initialize {
             "usage" => "forwarder:load_config"
         }
     );
+    BarnOwl::new_command(
+        "forwarder:load_zephyr_subs" => \&load_zephyr_subs,
+        {
+            "summary" => "subscribe to classes the forwarder listens on",
+            "usage" => "forwarder:load_zephyr_subs"
+        }
+    );
 
     load_config("forwarder");
     BarnOwl::admin_message('Forwarder', "Initialized Forwarder.");
+}
+
+sub load_zephyr_subs {
+    my $classpair;
+    foreach $classpair (@classes)
+    {
+        $classpair->load_zephyr_subs();
+    }
 }
 
 sub handle_message {
@@ -88,6 +104,7 @@ sub handle_message {
 }
 
 $BarnOwl::Hooks::startup->add("BarnOwl::Module::Forwarder::initialize");
+$BarnOwl::Zephyr::zephyrStartup->add('BarnOwl::Module::Forwarder::load_zephyr_subs');
 
 eval {
     $BarnOwl::Hooks::receiveMessage->add('BarnOwl::Module::Forwarder::handle_message');
@@ -130,6 +147,16 @@ sub connect {
         } elsif ($@) {
             BarnOwl::Module::Forwarder::warn("Unexpected error while connecting to $username:\n$@");
         }
+    }
+}
+
+sub load_zephyr_subs {
+    my $this = shift;
+    if($this->{zephyr} and $this->{'zephyr'}->{'class'}) {
+        BarnOwl::subscribe($this->{'zephyr'}->{'class'});
+    }
+    if($this->{private_recv_zephyr} and $this->{'private_recv_zephyr'}->{'class'}) {
+        BarnOwl::subscribe($this->{'private_recv_zephyr'}->{'class'}, '*', '%me%');
     }
 }
 
