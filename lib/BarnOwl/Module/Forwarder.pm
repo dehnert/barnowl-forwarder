@@ -147,6 +147,10 @@ sub connect {
         } elsif ($@) {
             BarnOwl::Module::Forwarder::warn("Unexpected error while connecting to $username:\n$@");
         }
+        my @subscribers = @{$this->{'jabber'}->{'subscribers'}};
+        foreach my $subscriber (@subscribers) {
+            BarnOwl::jroster('sub', $subscriber, '-a', $username);
+        }
     }
 }
 
